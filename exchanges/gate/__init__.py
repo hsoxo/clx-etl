@@ -2,7 +2,6 @@ from exchanges._base_ import BaseClient
 import pandas as pd
 from constants import SymbolStatus
 from utils import precision, to_decimal_str
-from decimal import Decimal
 
 
 class GateSpotClient(BaseClient):
