@@ -1,6 +1,8 @@
+import asyncio
+import time
 from typing import ClassVar
 
-from constants import InstType, SymbolStatus
+from constants import INTERVAL_TO_SECONDS, InstType, SymbolStatus
 from utils import precision, to_decimal_str
 
 from exchanges._base_ import BaseClient
@@ -48,6 +50,66 @@ class GateSpotClient(BaseClient):
             )
         return rows
 
+    async def get_kline(
+        self,
+        symbol: str,
+        interval: str = "1m",
+        start_ms: int | None = None,
+        end_ms: int | None = None,
+        sleep_ms: int = 100,
+    ):
+        """
+        https://www.gate.com/docs/developers/apiv4/zh_CN/#%E5%B8%82%E5%9C%BA-k-%E7%BA%BF%E5%9B%BE
+        [
+            [
+                "1539852480", # 秒(s)精度的 Unix 时间戳
+                "971519.677", # 计价货币交易额
+                "0.0021724", # 收盘价
+                "0.0021922", # 最高价
+                "0.0021724", # 最低价
+                "0.0021737", # 开盘价
+                "true", # 窗口是否关闭
+            ]
+        ]
+        """
+        limit = 1000
+
+        def get_data(data):
+            if "message" not in data or "Candlestick too long ago" not in data["message"]:
+                return data
+            return []
+
+        async for results in self._get_kline(
+            url="/spot/candlesticks",
+            params={
+                "currency_pair": symbol,
+                "interval": interval,
+                "limit": limit,
+            },
+            get_data=get_data,
+            format_item=lambda d: {
+                "exchange_id": self.exchange_id,
+                "inst_type": self.inst_type,
+                "symbol": symbol,
+                "timestamp": int(d[0]) * 1000,
+                "open": d[5],
+                "high": d[3],
+                "low": d[4],
+                "close": d[2],
+                "quote_volume": d[1],
+            },
+            start_time_key="from",
+            # end_time_key="to",
+            limit=limit,
+            time_unit="s",
+            symbol=symbol,
+            interval=interval,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            sleep_ms=sleep_ms,
+        ):
+            yield results
+
 
 class GatePerpClient(BaseClient):
     """https://www.gate.com/docs/developers/apiv4/zh_CN/#futures"""
@@ -91,3 +153,58 @@ class GatePerpClient(BaseClient):
                 }
             )
         return rows
+
+    async def get_kline(
+        self,
+        symbol: str,
+        interval: str = "1m",
+        start_ms: int | None = None,
+        end_ms: int | None = None,
+        sleep_ms: int = 100,
+    ):
+        """
+        https://www.gate.com/docs/developers/apiv4/zh_CN/#%E5%90%88%E7%BA%A6%E5%B8%82%E5%9C%BA-k-%E7%BA%BF%E5%9B%BE
+        [
+            {
+                "t": 1539852480, # 秒(s)精度的 Unix 时间戳
+                "v": 97151, # 成交量
+                "c": "1.032", # 收盘价
+                "h": "1.032", # 最高价
+                "l": "1.032", # 最低价
+                "o": "1.032", # 开盘价
+                "sum": "3580" # 计价货币交易额
+            }
+        ]
+        """
+        limit = 1000
+        async for results in self._get_kline(
+            url="/futures/usdt/candlesticks",
+            params={
+                "contract": symbol,
+                "interval": interval,
+                "limit": limit,
+            },
+            get_data=lambda d: d,
+            format_item=lambda d: {
+                "exchange_id": self.exchange_id,
+                "inst_type": self.inst_type,
+                "symbol": symbol,
+                "timestamp": int(d["t"]) * 1000,
+                "open": d["o"],
+                "high": d["h"],
+                "low": d["l"],
+                "close": d["c"],
+                "volume": d["v"],
+                "quote_volume": d["sum"],
+            },
+            start_time_key="from",
+            # end_time_key="to",
+            limit=limit,
+            time_unit="s",
+            symbol=symbol,
+            interval=interval,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            sleep_ms=sleep_ms,
+        ):
+            yield results

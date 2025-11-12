@@ -1,6 +1,8 @@
+import asyncio
+import time
 from typing import ClassVar
 
-from constants import InstType, SymbolStatus
+from constants import INTERVAL_TO_SECONDS, InstType, SymbolStatus
 
 from exchanges._base_ import BaseClient
 
@@ -54,3 +56,61 @@ class AsterPerpClient(BaseClient):
                 }
             )
         return rows
+
+    async def get_kline(
+        self,
+        symbol: str,
+        interval: str = "1m",
+        start_ms: int | None = None,
+        end_ms: int | None = None,
+        sleep_ms: int = 100,
+    ):
+        """
+        https://github.com/asterdex/api-docs/blob/master/aster-finance-futures-api-v3.md#klinecandlestick-data
+
+        [
+          [
+            1499040000000,      // Open time
+            "0.01634790",       // Open
+            "0.80000000",       // High
+            "0.01575800",       // Low
+            "0.01577100",       // Close
+            "148976.11427815",  // Volume
+            1499644799999,      // Close time
+            "2434.19055334",    // Quote asset volume
+            308,                // Number of trades
+            "1756.87402397",    // Taker buy base asset volume
+            "28.46694368",      // Taker buy quote asset volume
+            "17928899.62484339" // Ignore.
+          ]
+        ]
+        """
+        limit = 1000
+        async for results in self._get_kline(
+            url="/fapi/v3/klines",
+            params={"symbol": symbol, "interval": interval, "limit": limit},
+            get_data=lambda d: d,
+            format_item=lambda d: {
+                "exchange_id": self.exchange_id,
+                "inst_type": self.inst_type,
+                "symbol": symbol,
+                "timestamp": d[0],
+                "open": d[1],
+                "high": d[2],
+                "low": d[3],
+                "close": d[4],
+                "volume": d[5],
+                "quote_volume": d[7],
+                "count": d[8],
+            },
+            start_time_key="startTime",
+            end_time_key="endTime",
+            limit=limit,
+            time_unit="ms",
+            symbol=symbol,
+            interval=interval,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            sleep_ms=sleep_ms,
+        ):
+            yield results

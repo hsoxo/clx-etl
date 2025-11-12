@@ -10,7 +10,7 @@ class MexcSpotClient(BaseClient):
 
     exchange_name = "mexc"
     inst_type = InstType.SPOT
-    base_url = "https://api.mexc.com/api"
+    base_url = "https://api.mexc.com"
 
     status_map: ClassVar[dict[str, SymbolStatus]] = {
         "1": SymbolStatus.ACTIVE,
@@ -22,7 +22,7 @@ class MexcSpotClient(BaseClient):
         """
         https://www.mexc.com/api-docs/spot-v3/market-data-endpoints#exchange-information
         """
-        return await self.send_request("GET", "/v3/exchangeInfo")
+        return await self.send_request("GET", "/api/v3/exchangeInfo")
 
     async def get_all_symbols(self):
         data = await self.get_exchange_info()
@@ -44,6 +44,67 @@ class MexcSpotClient(BaseClient):
                 }
             )
         return rows
+
+    async def get_kline(
+        self,
+        symbol: str,
+        interval: str = "1m",
+        start_ms: int | None = None,
+        end_ms: int | None = None,
+        sleep_ms: int = 100,
+    ):
+        """
+        https://www.mexc.com/api-docs/spot-v3/market-data-endpoints#klinecandlestick-data
+        [
+            [
+                1640804880000, // Open time
+                "47482.36", // Open
+                "47482.36", // High
+                "47416.57", // Low
+                "47436.1", // Close
+                "3.550717", // Volume
+                1640804940000, // Close time
+                "168387.3" // Quote asset volume
+            ]
+        ]
+        """
+        interval_map = {
+            "1m": "1m",
+            "1h": "60m",
+            "1d": "1d",
+        }
+        limit = 1000
+        async for results in self._get_kline(
+            url="/api/v3/klines",
+            params={
+                "symbol": symbol,
+                "interval": interval_map.get(interval),
+                "limit": limit,
+            },
+            get_data=lambda d: d,
+            format_item=lambda d: {
+                "exchange_id": self.exchange_id,
+                "inst_type": self.inst_type,
+                "symbol": symbol,
+                "timestamp": int(d[0]),
+                "open": d[1],
+                "high": d[2],
+                "low": d[3],
+                "close": d[4],
+                "volume": d[5],
+                "quote_volume": d[7],
+            },
+            start_time_key="startTime",
+            end_time_key="endTime",
+            limit=limit,
+            time_unit="ms",
+            symbol=symbol,
+            interval=interval,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            sleep_ms=sleep_ms,
+        ):
+            yield results
 
 
 class MexcPerpClient(BaseClient):
@@ -87,3 +148,110 @@ class MexcPerpClient(BaseClient):
                 }
             )
         return rows
+
+    async def get_kline(
+        self,
+        symbol: str,
+        interval: str = "1m",
+        start_ms: int | None = None,
+        end_ms: int | None = None,
+        sleep_ms: int = 100,
+    ):
+        """
+        https://www.mexc.com/api-docs/futures/market-endpoints#get-candlestick-data
+        {
+            "success": true,
+            "code": 0,
+            "data": {
+                "time": [
+                    1761876000,
+                    1761876900
+                ],
+                "open": [
+                    109573.9,
+                    109006.4
+                ],
+                "close": [
+                    109006.4,
+                    109301.5
+                ],
+                "high": [
+                    109628.1,
+                    109426.2
+                ],
+                "low": [
+                    108953.3,
+                    109006.4
+                ],
+                "vol": [
+                    5587051.0,
+                    5739575.0
+                ],
+                "amount": [
+                    6.106243567181E7,
+                    6.270099147368E7
+                ],
+                "realOpen": [
+                    109574.0,
+                    109010.0
+                ],
+                "realClose": [
+                    109006.4,
+                    109301.5
+                ],
+                "realHigh": [
+                    109628.1,
+                    109426.2
+                ],
+                "realLow": [
+                    108953.3,
+                    109010.0
+                ]
+            }
+        }
+        """
+        interval_map = {
+            "1m": "1m",
+            "1h": "60m",
+            "1d": "1d",
+        }
+        limit = 2000
+        async for results in self._get_kline(
+            url=f"https://contract.mexc.com/api/v1/contract/kline/{symbol}",
+            params={
+                "interval": interval_map.get(interval),
+                "limit": limit,
+            },
+            get_data=lambda d: zip(
+                d["data"]["time"],
+                d["data"]["open"],
+                d["data"]["high"],
+                d["data"]["low"],
+                d["data"]["close"],
+                d["data"]["vol"],
+                d["data"]["amount"],
+                strict=False,
+            ),
+            format_item=lambda d: {
+                "exchange_id": self.exchange_id,
+                "inst_type": self.inst_type,
+                "symbol": symbol,
+                "timestamp": int(d[0]) * 1000,
+                "open": d[1],
+                "high": d[2],
+                "low": d[3],
+                "close": d[4],
+                "volume": d[5],
+                "quote_volume": d[6],
+            },
+            start_time_key="start",
+            end_time_key="end",
+            limit=limit,
+            time_unit="s",
+            symbol=symbol,
+            interval=interval,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            sleep_ms=sleep_ms,
+        ):
+            yield results

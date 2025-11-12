@@ -48,6 +48,67 @@ class OkxSpotClient(BaseClient):
             )
         return rows
 
+    async def get_kline(
+        self,
+        symbol: str,
+        interval: str = "1m",
+        start_ms: int | None = None,
+        end_ms: int | None = None,
+        sleep_ms: int = 100,
+    ):
+        """
+        https://www.okx.com/docs-v5/en/#public-data-rest-api-get-mark-price-candlesticks-history
+        {
+            "code":"0",
+            "msg":"",
+            "data":[
+                [
+                    "1597026383085",  // open time
+                    "3.721",  // open
+                    "3.743",  // high
+                    "3.677",  // low
+                    "3.708",  // close
+                    "1"  // confirm
+                ]
+            ]
+        }
+
+        """
+        interval_map = {
+            "1m": "1m",
+            "1h": "1H",
+        }
+        limit = 1000
+        async for results in self._get_kline(
+            url="/v5/market/history-mark-price-candles",
+            params={
+                "instId": symbol,
+                "bar": interval_map.get(interval),
+                "limit": limit,
+            },
+            get_data=lambda d: d["data"],
+            format_item=lambda d: {
+                "exchange_id": self.exchange_id,
+                "inst_type": self.inst_type,
+                "symbol": symbol,
+                "timestamp": int(d[0]),
+                "open": d[1],
+                "high": d[2],
+                "low": d[3],
+                "close": d[4],
+            },
+            start_time_key="after",
+            end_time_key="before",
+            limit=limit,
+            time_unit="ms",
+            symbol=symbol,
+            interval=interval,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            sleep_ms=sleep_ms,
+        ):
+            yield results
+
 
 class OkxPerpClient(BaseClient):
     """https://www.okx.com/docs-v5/en/#public-data"""
@@ -91,3 +152,64 @@ class OkxPerpClient(BaseClient):
                 }
             )
         return rows
+
+    async def get_kline(
+        self,
+        symbol: str,
+        interval: str = "1m",
+        start_ms: int | None = None,
+        end_ms: int | None = None,
+        sleep_ms: int = 100,
+    ):
+        """
+        https://www.okx.com/docs-v5/en/#public-data-rest-api-get-mark-price-candlesticks-history
+        {
+            "code":"0",
+            "msg":"",
+            "data":[
+                [
+                    "1597026383085",  // open time
+                    "3.721",  // open
+                    "3.743",  // high
+                    "3.677",  // low
+                    "3.708",  // close
+                    "1"  // confirm
+                ]
+            ]
+        }
+
+        """
+        interval_map = {
+            "1m": "1m",
+            "1h": "1H",
+        }
+        limit = 1000
+        async for results in self._get_kline(
+            url="/v5/market/history-mark-price-candles",
+            params={
+                "instId": symbol,
+                "bar": interval_map.get(interval),
+                "limit": limit,
+            },
+            get_data=lambda d: d["data"],
+            format_item=lambda d: {
+                "exchange_id": self.exchange_id,
+                "inst_type": self.inst_type,
+                "symbol": symbol,
+                "timestamp": int(d[0]),
+                "open": d[1],
+                "high": d[2],
+                "low": d[3],
+                "close": d[4],
+            },
+            start_time_key="after",
+            end_time_key="before",
+            limit=limit,
+            time_unit="ms",
+            symbol=symbol,
+            interval=interval,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            sleep_ms=sleep_ms,
+        ):
+            yield results
