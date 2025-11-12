@@ -1,18 +1,21 @@
 import asyncio
 
-from exchanges.bitget import BitgetSpotClient, BitgetPerpClient
-from exchanges.bitmart import BitmartSpotClient, BitmartPerpClient
-from exchanges.bybit import BybitSpotClient, BybitPerpClient
-from exchanges.gate import GateSpotClient, GatePerpClient
-from exchanges.mexc import MexcSpotClient, MexcPerpClient
-from exchanges.okx import OkxSpotClient, OkxPerpClient
-from exchanges.woox import WooxSpotClient, WooxPerpClient
 from exchanges.aster import AsterPerpClient
+from exchanges.binance import BinancePerpClient, BinanceSpotClient
+from exchanges.bitget import BitgetPerpClient, BitgetSpotClient
+from exchanges.bitmart import BitmartPerpClient, BitmartSpotClient
+from exchanges.bybit import BybitPerpClient, BybitSpotClient
+from exchanges.gate import GatePerpClient, GateSpotClient
+from exchanges.mexc import MexcPerpClient, MexcSpotClient
+from exchanges.okx import OkxPerpClient, OkxSpotClient
+from exchanges.woox import WooxPerpClient, WooxSpotClient
 
 
 async def sync_symbols():
     clients = [
         AsterPerpClient(),
+        BinanceSpotClient(),
+        BinancePerpClient(),
         BitgetSpotClient(),
         BitgetPerpClient(),
         BitmartSpotClient(),

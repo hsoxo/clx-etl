@@ -35,26 +35,27 @@ class AsterPerpClient(BaseClient):
         data = await self.get_exchange_info()
         rows = []
         for sym in data["symbols"]:
-            tick = step = None
-            for f in sym["filters"]:
-                if f["filterType"] == "PRICE_FILTER":
-                    tick = f.get("tickSize")
-                elif f["filterType"] == "LOT_SIZE":
-                    step = f.get("stepSize")
-            rows.append(
-                {
-                    "symbol": sym["symbol"],
-                    "base_asset": sym["baseAsset"],
-                    "quote_asset": sym["quoteAsset"],
-                    "status": self.status_map.get(sym["status"]),
-                    "exchange_id": self.exchange_id,
-                    "inst_type": self.inst_type,
-                    "tick_size": tick,
-                    "step_size": step,
-                    "price_precision": sym["pricePrecision"],
-                    "quantity_precision": sym["quantityPrecision"],
-                }
-            )
+            if sym["contractType"] == "PERPETUAL":
+                tick = step = None
+                for f in sym["filters"]:
+                    if f["filterType"] == "PRICE_FILTER":
+                        tick = f.get("tickSize")
+                    elif f["filterType"] == "LOT_SIZE":
+                        step = f.get("stepSize")
+                rows.append(
+                    {
+                        "symbol": sym["symbol"],
+                        "base_asset": sym["baseAsset"],
+                        "quote_asset": sym["quoteAsset"],
+                        "status": self.status_map.get(sym["status"]),
+                        "exchange_id": self.exchange_id,
+                        "inst_type": self.inst_type,
+                        "tick_size": tick,
+                        "step_size": step,
+                        "price_precision": sym["pricePrecision"],
+                        "quantity_precision": sym["quantityPrecision"],
+                    }
+                )
         return rows
 
     async def get_kline(

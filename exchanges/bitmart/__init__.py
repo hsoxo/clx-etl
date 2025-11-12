@@ -82,6 +82,14 @@ class BitmartSpotClient(BaseClient):
             "1d": "1440",
         }
         limit = 200
+
+        def get_data(data):
+            if isinstance(data.get("data"), list):
+                return data["data"]
+            if data.get("message") == "no data":
+                return []
+            raise Exception(f"Unknown data format: {data}")
+
         async for results in self._get_kline(
             url="/quotation/v3/klines",
             params={
@@ -89,7 +97,7 @@ class BitmartSpotClient(BaseClient):
                 "step": interval_map.get(interval),
                 "limit": limit,
             },
-            get_data=lambda d: d["data"],
+            get_data=get_data,
             format_item=lambda d: {
                 "exchange_id": self.exchange_id,
                 "inst_type": self.inst_type,

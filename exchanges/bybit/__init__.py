@@ -142,20 +142,21 @@ class BybitPerpClient(BaseClient):
         data = await self.get_exchange_info()
         rows = []
         for sym in data["result"]["list"]:
-            rows.append(
-                {
-                    "symbol": sym["symbol"],
-                    "base_asset": sym["baseCoin"],
-                    "quote_asset": sym["quoteCoin"],
-                    "status": self.status_map.get(sym["status"]),
-                    "exchange_id": self.exchange_id,
-                    "inst_type": self.inst_type,
-                    "tick_size": sym["priceFilter"]["tickSize"],
-                    "step_size": sym["lotSizeFilter"]["qtyStep"],
-                    "price_precision": int(sym.get("priceScale", precision(sym["priceFilter"]["tickSize"]))),
-                    "quantity_precision": precision(sym["lotSizeFilter"]["qtyStep"]),
-                }
-            )
+            if sym["contractType"] == "LinearPerpetual":
+                rows.append(
+                    {
+                        "symbol": sym["symbol"],
+                        "base_asset": sym["baseCoin"],
+                        "quote_asset": sym["quoteCoin"],
+                        "status": self.status_map.get(sym["status"]),
+                        "exchange_id": self.exchange_id,
+                        "inst_type": self.inst_type,
+                        "tick_size": sym["priceFilter"]["tickSize"],
+                        "step_size": sym["lotSizeFilter"]["qtyStep"],
+                        "price_precision": int(sym.get("priceScale", precision(sym["priceFilter"]["tickSize"]))),
+                        "quantity_precision": precision(sym["lotSizeFilter"]["qtyStep"]),
+                    }
+                )
         return rows
 
     async def get_kline(

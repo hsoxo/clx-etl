@@ -127,10 +127,8 @@ class WooxPerpClient(BaseClient):
     base_url = ""
 
     status_map: ClassVar[dict[str, SymbolStatus]] = {
-        "live": SymbolStatus.ACTIVE,
-        "suspend": SymbolStatus.HALTED,
-        "preopen": SymbolStatus.PENDING,
-        "test": SymbolStatus.PENDING,
+        "TRADING": SymbolStatus.ACTIVE,
+        "SUSPENDED": SymbolStatus.HALTED,
     }
 
     async def get_exchange_info(self):
