@@ -1,0 +1,21 @@
+services:
+  exchange-reader:
+    build: .
+    container_name: exchange-reader
+    env_file:
+      - .env
+    restart: always
+
+    command: ["python", "scheduler.py"]
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.gethostbyname('google.com')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "4g"
