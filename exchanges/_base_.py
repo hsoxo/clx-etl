@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import asyncio
+from datetime import datetime, timedelta
 import time
 import traceback
 from typing import Literal
@@ -112,7 +113,11 @@ class BaseClient(ABC):
         """)
         max_ts_in_db = result.result_rows[0][0] if result.result_rows and result.result_rows[0][0] else 0
         if start_ms is None:
-            start_ms = max_ts_in_db + interval_ms
+            if max_ts_in_db > 0:
+                start_ms = max_ts_in_db + interval_ms
+            else:
+                today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                start_ms = int((today - timedelta(days=180)).timestamp() * 1000)
         if not force_start and max_ts_in_db > 0 and start_ms < max_ts_in_db:
             start_ms = max_ts_in_db + interval_ms
 

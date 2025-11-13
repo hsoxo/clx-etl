@@ -199,7 +199,7 @@ class WooxPerpClient(BaseClient):
         """
         limit = 1000
         async for results in self._get_kline(
-            url="https://api.woox.io/v1/hist/kline",
+            url="https://api-pub.woox.io/v1/hist/kline",
             params={
                 "symbol": symbol,
                 "type": interval,

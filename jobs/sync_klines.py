@@ -30,7 +30,7 @@ LOG_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
     "<level>{level:<5}</level> | "
     "<cyan>{extra[job_id]}</cyan> "
-    "[{extra[inst_type]}:{extra[exchange]:<8}] {extra[symbol]}"
+    "[{extra[inst_type]}:{extra[exchange]:<7}]{extra[symbol]} | "
     "<level>{message}</level>"
 )
 

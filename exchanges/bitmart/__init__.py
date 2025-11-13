@@ -172,7 +172,7 @@ class BitmartPerpClient(BaseClient):
         sleep_ms: int = 100,
     ):
         """
-        https://developer-pro.bitmart.com/en/spot/#get-history-k-line-v3
+        https://developer-pro.bitmart.com/en/futuresv2/#get-k-line
 
         {
             "code":1000,
@@ -215,8 +215,8 @@ class BitmartPerpClient(BaseClient):
                 "close": d["close_price"],
                 "volume": d["volume"],
             },
-            start_time_key="after",
-            end_time_key="before",
+            start_time_key="start_time",
+            end_time_key="end_time",
             limit=limit,
             time_unit="s",
             symbol=symbol,
