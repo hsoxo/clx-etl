@@ -1,6 +1,7 @@
+import asyncio
 import sys
 
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from loguru import logger as _logger
 
 from jobs.sync_klines import sync_klines_1h, sync_klines_1m
@@ -26,12 +27,18 @@ LOG_FORMAT = (
 _logger.remove()
 _logger.add(sys.stdout, format=LOG_FORMAT, enqueue=True)
 
-scheduler = BlockingScheduler()
-scheduler.add_job(sync_klines_1m, "interval", days=1, max_instances=1)
-scheduler.add_job(sync_klines_1h, "interval", days=1, max_instances=1)
-scheduler.add_job(sync_symbols, "interval", days=1, max_instances=1)
+
+async def main():
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(sync_klines_1m, "interval", days=1, max_instances=1)
+    scheduler.add_job(sync_klines_1h, "interval", days=1, max_instances=1)
+    scheduler.add_job(sync_symbols, "interval", days=1, max_instances=1)
+    scheduler.start()
+
+    await asyncio.Event().wait()  # 防止退出
+
 
 if __name__ == "__main__":
     logger = _logger.bind(job_id="MAIN")
     logger.info("Starting scheduler...")
-    scheduler.start()
+    asyncio.run(main())
