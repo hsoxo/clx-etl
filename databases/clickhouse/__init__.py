@@ -19,11 +19,11 @@ __all__ = [
     "engine",
 ]
 
-CLICKHOUSE_HOST = os.environ["CLICKHOUSE_HOST"]
-CLICKHOUSE_PORT = int(os.environ["CLICKHOUSE_PORT"] or 8123)
-CLICKHOUSE_USER = os.environ["CLICKHOUSE_USER"]
-CLICKHOUSE_PASSWORD = os.environ["CLICKHOUSE_PASSWORD"]
-CLICKHOUSE_DATABASE = os.environ["CLICKHOUSE_DATABASE"]
+CLICKHOUSE_HOST = os.environ.get("CLICKHOUSE_HOST")
+CLICKHOUSE_PORT = int(os.environ.get("CLICKHOUSE_PORT") or 8123)
+CLICKHOUSE_USER = os.environ.get("CLICKHOUSE_USER")
+CLICKHOUSE_PASSWORD = os.environ.get("CLICKHOUSE_PASSWORD")
+CLICKHOUSE_DATABASE = os.environ.get("CLICKHOUSE_DATABASE")
 
 # 创建 ClickHouse SQLAlchemy 引擎
 engine = create_engine(

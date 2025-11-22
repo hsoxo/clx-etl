@@ -115,3 +115,11 @@ show_error_codes = true
 check_untyped_defs = true
 namespace_packages = true
 plugins = ["sqlalchemy.ext.mypy.plugin"]
+
+[tool.setuptools]
+packages = [
+    "databases",
+    "exchanges",
+    "jobs",
+    "utils",
+]
