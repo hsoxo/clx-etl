@@ -1,0 +1,34 @@
+pipeline:
+
+  build:
+    image: docker
+    environment:
+      REG: 10.10.10.112:5000
+    commands:
+      - echo "Building Docker image..."
+      - docker build -t $REG/clx-etl:${CI_COMMIT_SHA} .
+      - docker tag $REG/clx-etl:${CI_COMMIT_SHA} $REG/clx-etl:latest
+      - docker push $REG/clx-etl:${CI_COMMIT_SHA}
+      - docker push $REG/clx-etl:latest
+
+  deploy-staging:
+    when:
+      branch: main
+    image: alpine
+    environment:
+      HOST: 10.10.10.137
+      REG: 10.10.10.112:5000
+    commands:
+      - apk add openssh-client
+      - ssh root@$HOST "IMAGE=$REG/clx-etl:${CI_COMMIT_SHA} docker compose -f /mnt/data0/app/docker-compose.yml pull && docker compose -f /mnt/data0/app/docker-compose.yml up -d"
+
+  deploy-production:
+    when:
+      event: manual
+    image: alpine
+    environment:
+      HOST: 10.10.10.132
+      REG: 10.10.10.112:5000
+    commands:
+      - apk add openssh-client
+      - ssh root@$HOST "IMAGE=$REG/clx-etl:${CI_COMMIT_SHA} docker compose -f /mnt/data0/app/docker-compose.yml pull && docker compose -f /mnt/data0/app/docker-compose.yml up -d"
