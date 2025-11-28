@@ -56,12 +56,12 @@ steps:
               -e DORIS_PORT=9030 \
               -e DORIS_USER=etl \
               -e DORIS_PASSWORD=$DORIS_PASSWORD \
-              -e DORIS_DB=clx_prod \
+              -e DORIS_DB=clx_stg \
               -e MYSQL_HOST=192.168.50.137 \
               -e MYSQL_PORT=3306 \
               -e MYSQL_USER=etl \
               -e MYSQL_PASSWORD=$MYSQL_PASSWORD \
-              -e MYSQL_DB=clx_prod \
+              -e MYSQL_DB=clx_stg \
               $REGISTRY/$IMAGE_NAME:${CI_COMMIT_SHA:0:8};
 
             echo 'Waiting 15 seconds...';
