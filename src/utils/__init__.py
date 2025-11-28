@@ -26,4 +26,4 @@ def align_to_5m(ms: int | str) -> datetime:
     dt = datetime.fromtimestamp(int(ms) / 1000, tz=UTC)
     minute = dt.minute - (dt.minute % 5)
     aligned = dt.replace(minute=minute, second=0, microsecond=0)
-    return aligned
+    return int(aligned.timestamp() * 1000)

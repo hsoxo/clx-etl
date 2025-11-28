@@ -170,7 +170,8 @@ class BinancePerpClient(BaseClient):
 
         for ts in all_ts:
             row = {
-                "dt": ts,
+                "ts": ts,
+                "dt": datetime.fromtimestamp(ts / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M:%S"),
                 "symbol": symbol.symbol,
                 "exchange_id": self.exchange_id,
                 "inst_type": self.inst_type.value,
@@ -207,10 +208,11 @@ class BinancePerpClient(BaseClient):
 
             merged.append(
                 {
+                    "ts": i["fundingTime"],
+                    "dt": datetime.fromtimestamp(i["fundingTime"] / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M:%S"),
                     "exchange_id": self.exchange_id,
                     "symbol": i["symbol"],
                     "inst_type": self.inst_type.value,
-                    "dt": datetime.fromtimestamp(i["fundingTime"] / 1000, tz=UTC),
                     "funding_rate": i["fundingRate"],
                     "funding_interval": info["fundingIntervalHours"] * 60,
                     "adjusted_cap": info["adjustedFundingRateCap"],
@@ -244,7 +246,7 @@ if __name__ == "__main__":
     print("symbol", symbol)
 
     async def main():
-        data = await client.get_funding_rate()
+        data = await client.get_long_short_ratio(symbol)
         print(data)
 
     asyncio.run(main())

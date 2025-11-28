@@ -173,7 +173,8 @@ class BybitPerpClient(BaseClient):
 
         for ts in all_ts:
             row = {
-                "dt": ts,
+                "ts": ts,
+                "dt": datetime.fromtimestamp(ts / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M:%S"),
                 "symbol": symbol.symbol,
                 "exchange_id": self.exchange_id,
                 "inst_type": self.inst_type.value,
@@ -216,10 +217,11 @@ class BybitPerpClient(BaseClient):
 
                 merged.append(
                     {
+                        "ts": funding_time,
+                        "dt": datetime.fromtimestamp(funding_time / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M:%S"),
                         "exchange_id": self.exchange_id,
                         "symbol": symbol,
                         "inst_type": 1,  # 永续
-                        "dt": datetime.fromtimestamp(funding_time / 1000, tz=UTC),
                         "funding_rate": funding_rate,
                         "funding_interval": i["fundingInterval"],
                         "adjusted_cap": i["upperFundingRate"],

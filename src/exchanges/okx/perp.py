@@ -175,7 +175,8 @@ class OkxPerpClient(BaseClient):
 
         for ts in all_ts:
             row = {
-                "dt": ts,
+                "ts": ts,
+                "dt": datetime.fromtimestamp(ts / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M:%S"),
                 "symbol": symbol.symbol,
                 "exchange_id": self.exchange_id,
                 "inst_type": self.inst_type.value,
@@ -216,10 +217,11 @@ class OkxPerpClient(BaseClient):
                 continue
             merged.append(
                 {
+                    "ts": int(i["fundingTime"]),
+                    "dt": datetime.fromtimestamp(int(i["fundingTime"]) / 1000, tz=UTC),
                     "exchange_id": self.exchange_id,
                     "symbol": i["instId"],
                     "inst_type": self.inst_type.value,
-                    "dt": datetime.fromtimestamp(int(i["fundingTime"]) / 1000, tz=UTC),
                     "funding_rate": i["fundingRate"],
                     "funding_interval": self._compute_funding_interval(
                         int(i["fundingTime"]), int(i["nextFundingTime"])
