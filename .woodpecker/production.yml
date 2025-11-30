@@ -43,7 +43,7 @@ steps:
       - |
           ssh -o StrictHostKeyChecking=yes hhe@$HOST "
             set -xe;
-            mkdir -p /opt/clx-etl/logs;
+            mkdir -p /opt/coinluxer/clx-etl/logs;
 
             docker pull $REGISTRY/$IMAGE_NAME:${CI_COMMIT_TAG};
 
@@ -69,7 +69,7 @@ steps:
               -e MYSQL_USER=etl \
               -e MYSQL_PASSWORD=$MYSQL_PASSWORD \
               -e MYSQL_DB=coinluxer \
-              -v /opt/clx-etl/logs:/app/logs \
+              -v /opt/coinluxer/clx-etl/logs:/app/logs \
               $REGISTRY/$IMAGE_NAME:${CI_COMMIT_TAG};
 
             echo 'Waiting 15 seconds...';
