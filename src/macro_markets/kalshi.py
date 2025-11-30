@@ -168,9 +168,6 @@ class KalshiClient:
             non_finalized_markets,
             "kalshi_market_meta",
         )
-        for i in non_finalized_markets:
-            if i["ticker"].startswith("KXBTCD-25NOV25"):
-                print(i)
 
         snapshot = []
         for i in markets:

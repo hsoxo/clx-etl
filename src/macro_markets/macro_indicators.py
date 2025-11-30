@@ -46,7 +46,7 @@ def _download_symbol(yf_symbol: str):
 executor = ThreadPoolExecutor(max_workers=8)
 
 
-async def get_macro_klines():
+async def get_macro_klines(logger):
     loop = asyncio.get_running_loop()
     results = []
 
@@ -59,11 +59,10 @@ async def get_macro_klines():
         try:
             df = await task
         except Exception as e:
-            print(f"❌ 下载失败 {key}: {e}")
+            logger.error(f"❌ 下载失败 {key}: {e}")
             continue
 
         if df is None or df.empty:
-            print(f"⚠️ 空数据: {key}")
             continue
 
         # 3) 处理 K线
