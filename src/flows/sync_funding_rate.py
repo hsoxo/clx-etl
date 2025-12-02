@@ -2,6 +2,7 @@ import asyncio
 import traceback
 
 from prefect import flow, task
+from prefect.cache_policies import NO_CACHE
 
 from exchanges._base_ import BaseClient
 from exchanges.binance import BinancePerpClient
@@ -9,10 +10,9 @@ from exchanges.bitget import BitgetPerpClient
 from exchanges.bybit import BybitPerpClient
 from exchanges.okx import OkxPerpClient
 from utils.logger import logger as _logger
-from utils.prefect_decorators import flow_timing
 
 
-@task(name="update-funding-rate")
+@task(name="update-funding-rate", cache_policy=NO_CACHE)
 async def update_funding_rate_task(client_name: str, client: BaseClient):
     try:
         await client.update_funding_rate()
@@ -25,7 +25,6 @@ async def update_funding_rate_task(client_name: str, client: BaseClient):
 
 
 @flow(name="sync-funding-rate")
-@flow_timing
 async def sync_funding_rate():
     logger = _logger.bind(job_id="FUNDING_RATE")
 
@@ -36,7 +35,9 @@ async def sync_funding_rate():
         "okx": OkxPerpClient(logger),
     }
 
-    await asyncio.gather(*[update_funding_rate_task.submit(name, client) for name, client in clients.items()])
+    # Prefect 会自动并发执行 submit，不需要 asyncio.gather
+    for name, client in clients.items():
+        update_funding_rate_task.submit(client_name=name, client=client)
 
 
 if __name__ == "__main__":

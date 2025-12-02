@@ -15,7 +15,7 @@ __all__ = ["ExchangeInfo", "ExchangeSymbol", "async_engine", "async_upsert_dataf
 load_dotenv()
 
 MYSQL_HOST = os.getenv("MYSQL_HOST")
-MYSQL_PORT = os.getenv("MYSQL_PORT")
+MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
 MYSQL_USER = os.getenv("MYSQL_USER")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 MYSQL_DB = os.getenv("MYSQL_DB")

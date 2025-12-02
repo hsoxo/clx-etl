@@ -3,13 +3,11 @@ from prefect import flow
 
 from databases.doris import get_stream_loader
 from utils.logger import logger as _logger
-from utils.prefect_decorators import flow_timing
 
 logger = _logger.bind(job_id="MACRO_INDICATORS")
 
 
 @flow(name="sync-macro-indicators")
-@flow_timing
 async def sync_macro_indicators():
     logger.info("Starting sync_macro_indicators...")
     results = await get_macro_klines(logger)

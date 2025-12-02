@@ -2,11 +2,9 @@ from macro_markets.oklink.fetcher import OklinkOnchainInfo
 from prefect import flow
 
 from databases.doris import get_stream_loader
-from utils.prefect_decorators import flow_timing
 
 
 @flow(name="sync-large-transfer")
-@flow_timing
 async def sync_onchain_large_transfer():
     stream_loader = get_stream_loader()
     oklink_onchain_info = OklinkOnchainInfo()

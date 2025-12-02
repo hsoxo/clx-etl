@@ -4,8 +4,10 @@ import time
 
 from prefect import get_run_logger
 
+from utils.start_logo import print_banner
 
-def flow_timing(name: str = None):
+
+def flow_timing(name: str | None = None):
     """
     Decorator for Prefect flows to log start/end time and elapsed seconds.
     """
@@ -17,6 +19,7 @@ def flow_timing(name: str = None):
             _name = name or fn.__name__
 
             start_ts = time.time()
+            print_banner(_name)
             logger.info(f"[FLOW STARTED] {_name} at {start_ts}")
 
             try:

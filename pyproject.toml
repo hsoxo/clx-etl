@@ -1,42 +1,44 @@
-[tool.poetry]
-name = "hs-exchange-reader"
+[project]
+name = "clx-etl"
 version = "0.1.0"
 description = "Async exchange symbol sync and reader service"
-authors = ["Bolong He <you@example.com>"]
-package-mode = false
-packages = [
-    { include = "databases" },
-    { include = "exchanges" },
-    { include = "jobs" },
-    { include = "utils" },
+authors = [{ name = "Bolong He", email = "you@example.com" }]
+requires-python = ">=3.11,<4.0"
+
+dependencies = [
+    "SQLAlchemy[asyncio]==2.0.44",
+    "apscheduler==3.11.0",
+    "requests[socks]",
+    "python-dotenv==1.1.1",
+    "loguru==0.7.3",
+    "pymysql==1.1.2",
+    "cryptography==46.0.3",
+    "aiomysql==0.3.2",
+    "aiohttp==3.13.2",
+    "pandas==2.3.3",
+    "structlog>=25.5.0",
+    "python-json-logger>=4.0.0",
+    "yfinance>=0.2.66",
+    "pycryptodome>=3.23.0",
+    "prefect>=3.6.4",
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.11,<4.0"
-SQLAlchemy = { version = "2.0.44", extras = ["asyncio"] }
-apscheduler = "3.11.0"
-requests = { extras = ["socks"], version = "*" }
-python-dotenv = "1.1.1"
-loguru = "0.7.3"
-pymysql = "1.1.2"
-cryptography = "46.0.3"
-aiomysql = "0.3.2"
-aiohttp = "3.13.2"
-pandas = "2.3.3"
-structlog = "^25.5.0"
-python-json-logger = "^4.0.0"
-yfinance = "^0.2.66"
-pycryptodome = "^3.23.0"
-[tool.poetry.group.dev.dependencies]
-ruff = ">=0.6.0"
-black = ">=24.4.0"
-mypy = ">=1.10.0"
-types-requests = "*"
-pytest = ">=8.0.0"
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6.0",
+    "black>=24.4.0",
+    "mypy>=1.10.0",
+    "types-requests",
+    "pytest>=8.0.0",
+]
 
+# ===================================================
+# Build system
+# ===================================================
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
 
 # ===============================
 # Ruff 配置
@@ -46,25 +48,12 @@ target-version = "py313"
 line-length = 120
 src = ["databases", "exchanges", "jobs", "utils"]
 
-select = [
-    "E", "W", "F", "I", "UP", "B", "A", "C4", "TID", "N", "ASYNC", "RUF"
-]
-
-ignore = [
-    "E501",
-    "B008",
-    "N818",
-]
+select = ["E","W","F","I","UP","B","A","C4","TID","N","ASYNC","RUF"]
+ignore = ["E501","B008","N818"]
 
 exclude = [
-    ".git",
-    ".mypy_cache",
-    ".ruff_cache",
-    ".pytest_cache",
-    "__pycache__",
-    "venv",
-    "build",
-    "dist",
+    ".git", ".mypy_cache", ".ruff_cache", ".pytest_cache",
+    "__pycache__", "venv", "build", "dist",
 ]
 
 [tool.ruff.isort]

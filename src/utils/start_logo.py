@@ -10,13 +10,14 @@ ASCII_LOGO = r"""
 """
 
 
-def print_banner():
+def print_banner(name: str | None = None):
     version = os.getenv("VERSION", "0.0.0")
     env = os.getenv("ENV", "local")
     slogan = os.getenv("CLX_SLOGAN", "Aggregating the world's liquidity flow.")
     start_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     print(ASCII_LOGO)
+    print(f" App         : clx-etl:{name}")
     print(f" Environment : {env}")
     print(f" Version     : {version}")
     print(f" Start Time  : {start_time}")

@@ -1,26 +1,31 @@
-FROM python:3.13-bookworm
+# ---------- Build Stage ----------
+FROM python:3.13-bookworm as builder
 
-ENV TZ=UTC
-ENV DEBIAN_FRONTEND=noninteractive
-ENV POETRY_VIRTUALENVS_CREATE=false
 ENV PATH="/root/.local/bin:$PATH"
-
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    gcc \
-    libpq-dev \
-    curl \
+    git gcc libpq-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-RUN pip install --no-cache-dir prefect prefect-docker
+COPY pyproject.toml .
+COPY uv.lock .
 
-COPY pyproject.toml poetry.lock* ./
-
-RUN poetry install --no-interaction --no-ansi --without dev --no-root
+RUN uv sync --frozen --no-dev
 
 COPY src .
 
+# ---------- Final Runtime Stage ----------
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# enable venv
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# copy .venv runtime
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app .

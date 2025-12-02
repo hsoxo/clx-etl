@@ -13,97 +13,123 @@ from flows.sync_macro_indicators import sync_macro_indicators
 from flows.sync_onchain_tx import sync_onchain_large_transfer
 from flows.sync_symbols import sync_symbols
 from prefect import deploy
-from prefect.server.schemas.schedules import IntervalSchedule, RRuleSchedule
+from prefect.client.schemas.schedules import IntervalSchedule, RRuleSchedule
 from prefect.types.entrypoint import EntrypointType
 
 ENV = os.getenv("ENV")
-IMAGE_URL = os.getenv("IMAGE_URL")
+IMAGE_URL = os.getenv("REGISTRY") + "/" + os.getenv("IMAGE_NAME") + ":" + os.getenv("VERSION")
 
 POOL_MAP = {
-    "staging": "clx-stg-docker",
-    "production": "coinluxer-prod-docker",
+    "staging": "clx-stg",
+    "production": "coinluxer",
 }
 
 
-# 秒级 cron → Prefect workaround 用 RRuleSchedule
-def per_second_cron(seconds_list, minutes="*", hours="*", freq="MINUTELY"):
-    return RRuleSchedule(
-        dtstart=datetime.now(UTC),
-        rrule=f"FREQ={freq};BYSECOND={','.join(map(str, seconds_list))};BYMINUTE={minutes};BYHOUR={hours}",
-    )
+# -------------------------------------------------------------------
+# Helper: Expand cron fields (支持 *, */5, 5, 5,10)
+# -------------------------------------------------------------------
+def expand_cron_field(value: str, max_value: int):
+    if value == "*" or value == "":
+        return list(range(0, max_value + 1))
+
+    if value.startswith("*/"):
+        step = int(value[2:])
+        return list(range(0, max_value + 1, step))
+
+    return [int(x) for x in value.split(",")]
 
 
+# -------------------------------------------------------------------
+# Helper: 秒级 cron → Prefect RRuleSchedule（完全合法 RFC5545）
+# -------------------------------------------------------------------
+def cron_seconds_schedule(seconds: list[int], minutes="*", hours="*"):
+    minutes_list = expand_cron_field(minutes, 59)
+    hours_list = expand_cron_field(hours, 23)
+    seconds_list = sorted(seconds)
+
+    minutes_str = ",".join(map(str, minutes_list))
+    hours_str = ",".join(map(str, hours_list))
+    seconds_str = ",".join(map(str, seconds_list))
+
+    # RFC5545 RRule 格式
+    dtstart = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    rrule = f"DTSTART:{dtstart}\nRRULE:FREQ=MINUTELY;BYSECOND={seconds_str};BYMINUTE={minutes_str};BYHOUR={hours_str}"
+
+    return RRuleSchedule(rrule=rrule)
+
+
+# -------------------------------------------------------------------
+# Deployments
+# -------------------------------------------------------------------
 if __name__ == "__main__":
     deployments = [
-        # ------------------------------------------------------------------------------
-        # sync_symbols: APS = interval(days=1)
-        # ------------------------------------------------------------------------------
+        # sync_symbols: 每天一次
         sync_symbols.to_deployment(
-            "sync-symbols",
-            cron="0 0 * * *",  # 每天一次
+            name=f"{ENV}-sync-symbols",
+            tags=[ENV],
+            description="同步交易所交易对",
+            cron="0 0 * * *",
             entrypoint_type=EntrypointType.MODULE_PATH,
         ),
-        # ------------------------------------------------------------------------------
-        # sync_long_short_ratio_5m: APS = cron */5 at second=5
-        # ------------------------------------------------------------------------------
+        # 每 5 分钟，第 5 秒执行
         sync_long_short_ratio_5m.to_deployment(
-            "sync-long-short-ratio-5m",
-            schedule=per_second_cron([5], minutes="*/5"),
+            name=f"{ENV}-sync-long-short-ratio-5m",
+            tags=[ENV],
+            description="同步交易所多空比[5min]",
+            schedule=cron_seconds_schedule([5], minutes="*/5"),
             entrypoint_type=EntrypointType.MODULE_PATH,
         ),
-        # ------------------------------------------------------------------------------
-        # sync_long_short_ratio_1h: APS second="5,30" minute=0
-        # ------------------------------------------------------------------------------
+        # 每小时 0 分，第 5 和 30 秒执行
         sync_long_short_ratio_1h.to_deployment(
-            "sync-long-short-ratio-1h",
-            schedule=per_second_cron([5, 30], minutes="0"),
+            name=f"{ENV}-sync-long-short-ratio-1h",
+            tags=[ENV],
+            description="同步交易所多空比[1h]",
+            schedule=cron_seconds_schedule([5, 30], minutes="0"),
             entrypoint_type=EntrypointType.MODULE_PATH,
         ),
-        # ------------------------------------------------------------------------------
-        # sync_long_short_ratio_1d: APS hour=0 minute=0 second=5,30
-        # ------------------------------------------------------------------------------
+        # 每天 00:00 的第 5 和 30 秒执行
         sync_long_short_ratio_1d.to_deployment(
-            "sync-long-short-ratio-1d",
-            schedule=per_second_cron([5, 30], minutes="0", hours="0"),
+            name=f"{ENV}-sync-long-short-ratio-1d",
+            tags=[ENV],
+            description="同步交易所多空比[1d]",
+            schedule=cron_seconds_schedule([5, 30], minutes="0", hours="0"),
             entrypoint_type=EntrypointType.MODULE_PATH,
         ),
-        # ------------------------------------------------------------------------------
-        # sync_funding_rate: APS = cron minute="0,1,5,30" second=5
-        # ------------------------------------------------------------------------------
+        # 每分钟 0,1,5,30 分钟，第 5 秒执行
         sync_funding_rate.to_deployment(
-            "sync-funding-rate",
-            schedule=per_second_cron([5], minutes="0,1,5,30"),
+            name=f"{ENV}-sync-funding-rate",
+            tags=[ENV],
+            description="同步交易所资金费率",
+            schedule=cron_seconds_schedule([5], minutes="0,1,5,30"),
             entrypoint_type=EntrypointType.MODULE_PATH,
         ),
-        # ------------------------------------------------------------------------------
-        # sync_large_transfer: APS interval(seconds=30)
-        # ------------------------------------------------------------------------------
+        # onchain_large_transfer: 每 30 秒执行
         sync_onchain_large_transfer.to_deployment(
-            "sync-large-transfer",
+            name=f"{ENV}-sync-onchain-large-transfer",
+            tags=[ENV],
+            description="同步链上大额转出",
             schedule=IntervalSchedule(interval=30),
             entrypoint_type=EntrypointType.MODULE_PATH,
         ),
-        # ------------------------------------------------------------------------------
-        # sync_cex_inflow: APS cron minute=0 second=5,30
-        # ------------------------------------------------------------------------------
+        # cex inflow: 每小时 0 分，第 5 和 30 秒执行
         sync_cex_inflow.to_deployment(
-            "sync-cex-inflow",
-            schedule=per_second_cron([5, 30], minutes="0"),
+            name=f"{ENV}-sync-cex-inflow",
+            tags=[ENV],
+            description="同步CEX资金流入",
+            schedule=cron_seconds_schedule([5, 30], minutes="0"),
             entrypoint_type=EntrypointType.MODULE_PATH,
         ),
-        # ------------------------------------------------------------------------------
-        # sync_macro_indicators: APS = interval(30s)
-        # ------------------------------------------------------------------------------
         sync_macro_indicators.to_deployment(
-            "sync-macro-indicators",
+            name=f"{ENV}-sync-macro-indicators",
+            tags=[ENV],
+            description="同步宏观指标",
             schedule=IntervalSchedule(interval=30),
             entrypoint_type=EntrypointType.MODULE_PATH,
         ),
-        # ------------------------------------------------------------------------------
-        # sync_kalshi: APS interval 60s
-        # ------------------------------------------------------------------------------
         sync_kalshi_flow.to_deployment(
-            "sync-kalshi",
+            name=f"{ENV}-sync-kalshi",
+            tags=[ENV],
+            description="同步 Kalshi 数据",
             schedule=IntervalSchedule(interval=60),
             entrypoint_type=EntrypointType.MODULE_PATH,
         ),

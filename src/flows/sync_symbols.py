@@ -1,8 +1,7 @@
 import asyncio
 
-from prefect import flow
+from prefect import flow, task
 
-from exchanges._base_ import BaseClient
 from exchanges.aster import AsterPerpClient, AsterSpotClient
 from exchanges.binance import BinancePerpClient, BinanceSpotClient
 from exchanges.bitget import BitgetPerpClient, BitgetSpotClient
@@ -15,49 +14,52 @@ from exchanges.mexc import MexcPerpClient, MexcSpotClient
 from exchanges.okx import OkxPerpClient, OkxSpotClient
 from exchanges.woox import WooxPerpClient, WooxSpotClient
 from utils.logger import logger as _logger
-from utils.prefect_decorators import flow_timing, task
+
+CLIENT_REGISTRY = {
+    "aster_spot": AsterSpotClient,
+    "aster_perp": AsterPerpClient,
+    "binance_spot": BinanceSpotClient,
+    "binance_perp": BinancePerpClient,
+    "bitget_spot": BitgetSpotClient,
+    "bitget_perp": BitgetPerpClient,
+    "bitmart_spot": BitmartSpotClient,
+    "bitmart_perp": BitmartPerpClient,
+    "bybit_spot": BybitSpotClient,
+    "bybit_perp": BybitPerpClient,
+    "coinbase_spot": CoinbaseSpotClient,
+    "gate_spot": GateSpotClient,
+    "gate_perp": GatePerpClient,
+    "kraken_spot": KrakenSpotClient,
+    "mexc_spot": MexcSpotClient,
+    "mexc_perp": MexcPerpClient,
+    "okx_spot": OkxSpotClient,
+    "okx_perp": OkxPerpClient,
+    "woox_spot": WooxSpotClient,
+    "woox_perp": WooxPerpClient,
+}
 
 
 @task(name="update-symbols-task", retries=2, retry_delay_seconds=3)
-async def update_symbols_task(client: BaseClient):
+async def update_symbols_task(client_name: str):
+    logger = _logger.bind(job_id=f"SYMBOLS-{client_name}")
+
+    client_class = CLIENT_REGISTRY[client_name]
+    client = client_class(logger)
+
     await client.update_all_symbols()
+    return f"{client_name} symbols ok"
 
 
 @flow(name="sync-symbols")
-@flow_timing
 async def sync_symbols():
-    logger = _logger.bind(job_id="SYMBOLS")
-    clients = [
-        AsterSpotClient(logger),
-        AsterPerpClient(logger),
-        BinanceSpotClient(logger),
-        BinancePerpClient(logger),
-        BitgetSpotClient(logger),
-        BitgetPerpClient(logger),
-        BitmartSpotClient(logger),
-        BitmartPerpClient(logger),
-        BybitSpotClient(logger),
-        BybitPerpClient(logger),
-        CoinbaseSpotClient(logger),
-        GateSpotClient(logger),
-        GatePerpClient(logger),
-        KrakenSpotClient(logger),
-        MexcSpotClient(logger),
-        MexcPerpClient(logger),
-        OkxSpotClient(logger),
-        OkxPerpClient(logger),
-        WooxSpotClient(logger),
-        WooxPerpClient(logger),
-    ]
-
-    await asyncio.gather(*(update_symbols_task.submit(client) for client in clients))
+    for client_name in CLIENT_REGISTRY:
+        update_symbols_task.submit(client_name)
 
 
 if __name__ == "__main__":
 
     async def sync_symbols_test():
-        logger = _logger.bind(job_id="SYMBOLS")
-        client = BinanceSpotClient(logger)
-        await update_symbols_task(client)
+        client_name = "binance_spot"
+        await update_symbols_task(client_name)
 
     asyncio.run(sync_symbols_test())

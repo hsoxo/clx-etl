@@ -20,10 +20,14 @@ steps:
     environment:
       PREFECT_API_URL: http://10.10.10.101:4200/api
       ENV: staging
-      IMAGE_URL: 10.10.10.112:5000/coinluxer/clx-etl:${CI_COMMIT_SHA:0:8}
+      
+      REGISTRY: 10.10.10.112:5000
+      IMAGE_NAME: coinluxer/clx-etl
+      VERSION: ${CI_COMMIT_SHA:0:8}
 
     commands:
-      - python src/deploy.py
+      - uv sync --frozen --no-dev
+      - .venv/bin/python src/deploy.py
 
   notify-success:
     when:
